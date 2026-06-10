@@ -10,7 +10,7 @@ Token-by-token generation with:
 import threading
 import time
 import uuid
-from typing import Generator, Optional
+from typing import Generator
 
 from .metrics import StreamMetrics, metrics_store
 
