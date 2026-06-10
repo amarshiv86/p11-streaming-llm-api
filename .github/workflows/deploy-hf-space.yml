@@ -1,0 +1,56 @@
+name: Deploy HF Space
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "hf_space/**"
+      - "src/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install huggingface-hub
+        run: pip install huggingface-hub
+
+      - name: Push to HuggingFace Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python - <<'EOF'
+          from huggingface_hub import HfApi
+          import os, shutil, tempfile
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.create_repo(
+              repo_id="amarshiv86/p11-streaming",
+              repo_type="space",
+              space_sdk="gradio",
+              exist_ok=True,
+              private=False,
+          )
+
+          tmp = tempfile.mkdtemp()
+          for item in os.listdir("hf_space"):
+              src = os.path.join("hf_space", item)
+              dst = os.path.join(tmp, item)
+              if os.path.isdir(src):
+                  shutil.copytree(src, dst)
+              else:
+                  shutil.copy2(src, dst)
+          shutil.copytree("src", os.path.join(tmp, "src"))
+
+          assert os.path.exists(os.path.join(tmp, "app.py")), "app.py missing!"
+          print("Upload root:", os.listdir(tmp))
+
+          api.upload_folder(
+              folder_path=tmp,
+              repo_id="amarshiv86/p11-streaming",
+              repo_type="space",
+          )
+          shutil.rmtree(tmp)
+          print("Deployed: amarshiv86/p11-streaming")
+          EOF

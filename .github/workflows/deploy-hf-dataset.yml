@@ -1,0 +1,39 @@
+name: Deploy HF Dataset
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install huggingface-hub
+        run: pip install huggingface-hub
+
+      - name: Push data/ to HuggingFace Dataset
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python - <<'EOF'
+          from huggingface_hub import HfApi
+          import os
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.create_repo(
+              repo_id="amarshiv86/p11-streaming-dataset",
+              repo_type="dataset",
+              exist_ok=True,
+              private=False,
+          )
+          api.upload_folder(
+              folder_path="data",
+              repo_id="amarshiv86/p11-streaming-dataset",
+              repo_type="dataset",
+          )
+          print("Deployed: amarshiv86/p11-streaming-dataset")
+          EOF
